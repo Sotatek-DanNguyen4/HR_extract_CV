@@ -1,0 +1,4 @@
+pip install -qU langchain-groq
+pip install pymupdf
+pip install python-docx docx2txt pypandoc
+pip install openpyxl
