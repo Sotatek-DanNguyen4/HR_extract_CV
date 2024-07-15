@@ -1,8 +1,8 @@
 import os
-from source.extract_text_fr_docx import extract_text_from_docx
-from source.extract_text_fr_pdf import extract_text_from_pdf
-from source.extract_text_fr_xlsx import extract_text_from_xlsx
-from source.extract_field import extract_field
+from extract_text_fr_docx import extract_text_from_docx
+from extract_text_fr_pdf import extract_text_from_pdf ,extract_text_from_pdf_2
+from extract_text_fr_xlsx import extract_text_from_xlsx
+from extract_field import extract_field
 from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import JSONResponse
 from openpyxl import load_workbook
@@ -41,7 +41,7 @@ app = FastAPI()
 #     raise ValueError("File không phải là PDF, DOCX hoặc XLSX.")
 def read_file(file_path, file_ext):
     if file_ext == '.pdf':
-        return extract_text_from_pdf(file_path)
+        return extract_text_from_pdf(file_path) + " " + extract_text_from_pdf_2(file_path)
     elif file_ext == '.docx':
         return extract_text_from_docx(file_path)
     elif file_ext == '.xlsx':

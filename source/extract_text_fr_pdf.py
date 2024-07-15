@@ -1,5 +1,6 @@
 import fitz  # PyMuPDF
 import re
+import pdfplumber
 
 def extract_text_from_pdf(pdf_path):
     # Mở file PDF
@@ -11,3 +12,10 @@ def extract_text_from_pdf(pdf_path):
         full_text += page.get_text()
     pdf_document.close()
     return full_text
+
+def extract_text_from_pdf_2(pdf_path):
+    text = ""
+    with pdfplumber.open(pdf_path) as pdf:
+        for page in pdf.pages:
+            text += page.extract_text()
+    return text
