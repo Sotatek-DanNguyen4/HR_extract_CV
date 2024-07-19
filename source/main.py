@@ -14,7 +14,7 @@ import logging
 # Cấu hình logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-os.environ["GROQ_API_KEY"] = "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"
+os.environ["GROQ_API_KEY"] = ""
 app = FastAPI()
 
 # # Hàm để kiểm tra loại file
