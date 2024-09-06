@@ -28,7 +28,15 @@ def calculate_total_working_time(job_data):
     total_months = 0
     periods = []
     for period in job_data.values():
-        start, end = period.split(' - ')
+        period = period.replace('present', str(formatted_time))
+        period = period.replace('Present', str(formatted_time))
+        period = period.replace('PRESENT', str(formatted_time))
+        period = period.replace('Now', str(formatted_time))
+        try:
+            start, end = period.split(' - ')
+        except:
+            start = '2024'
+            end = '2024'
         if len(start) == 4:
             start = f"01/{start}"
         elif len(start) == 7 and start[4] == '/':  # YYYY/MM
@@ -58,7 +66,6 @@ def calculate_total_working_time(job_data):
 
     return years, months
 def extract_field(text):
-    # print('heheChe')
     chat = ChatGroq(
         temperature=0,
         model="llama3-70b-8192",
@@ -72,9 +79,9 @@ def extract_field(text):
     )
 
     system = """Bạn là một trợ lý hỗ trợ trích xuất các trường thông tin trong CV của ứng viên, trả lời bằng TIẾNG VIỆT.
-                Trích xuất ra bằng Tiếng việt các thông tin sau: tên(nếu tên không có dấu thì vẫn giữ nguyên), giới tính, email, số điện thoại, địa chỉ,trường đại học, bằng cấp ( chỉ trả ra giỏi, khá, hoặc trung bình), chứng chỉ(bao gồm các loại chứng chỉ, chứng nhận). Nếu không có thông tin thì trả ra 'Không'. Chỉ cần đưa ra đáp án, không cần giải thích gì thêm.
+                Trích xuất ra bằng Tiếng việt các thông tin sau: tên(nếu tên không có dấu thì vẫn giữ nguyên), giới tính, email, số điện thoại, địa chỉ,trường đại học, bằng cấp ( chỉ trả ra giỏi, khá, hoặc trung bình), chứng chỉ(bao gồm các loại chứng chỉ, chứng nhận). Nếu không có thông tin thì trả ra 'Không'. Chỉ cần đưa ra đáp án là dạng json, không cần giải thích gì thêm.
                 Các trường thông tin có Ngôn ngữ khác tiếng việt thì dịch ra tiếng việt và điền vào đó.
-                Kết quả trả ra dưới dạng json, các value đều phải là dạng string.
+                Kết quả trả ra dưới dạng JSON, các value đều phải là dạng string.
                 Dưới đây là một số ví dụ:
                 Ví dụ 1: 
                 "Tên": "Nguyen Van Long"
@@ -84,7 +91,8 @@ def extract_field(text):
                 "Địa chỉ": "Ba Đình- Hà Nội"
                 "Trường đại học": "Bách Khoa"
                 "Bằng cấp": "Không"
-                "Chứng chỉ": "M2M BA: Business Analysis, LinkedIn: Power BI Essential Training"
+                "Chứng chỉ chuyên ngành": "M2M BA: Business Analysis, LinkedIn: Power BI Essential Training"
+                "Chứng chỉ ngoại ngữ": "Tiếng Nhật N1, Tiếng Anh B2"
                 Ví dụ 2: 
                 "Tên": "Vũ Như Hòa"
                 "Giới tính": "Nữ"
@@ -93,17 +101,25 @@ def extract_field(text):
                 "Địa chỉ":"Không"
                 "Trường đại học": "Đại học Xây dựng"
                 "Bằng cấp": "Khá"
-                "Chứng chỉ": "Không"
-                Dưới đây là đoạn văn cần trích xuất:"""
-    system_work = """Bạn là một trợ lý hỗ trợ trích xuất các trường thông tin kinh nghiệm làm việc trong CV của ứng viên bằng cách lấy ra tất cả thông tin công ty đã làm việc và thời gian tương ứng, trả ra dạng Json theo định dạng "tên công ty": "thời gian bắt đầu - thời gian kết thúc", biết hiện tại là {time}, hãy thay thế 'present' hoặc 'hiện tại' và các từ tương đương là {time}
+                "Chứng chỉ chuyên ngành": " AWS Certified Solutions Architect – Professional"
+                "Chứng chỉ ngoại ngữ": "Tiếng Anh Ielts 8.0"
+                Dưới đây là đoạn văn cần trích xuất:
+                """
+    system_work = """Bạn là một trợ lý hỗ trợ trích xuất các trường thông tin kinh nghiệm làm việc trong CV của ứng viên bằng cách trả ra tất cả tên công ty và thời gian làm việc tương ứng, trả ra dạng Json theo định dạng: key là "tên công ty, vị trí làm việc" value là "tháng/năm - tháng/năm", biết hiện tại là {time}, hãy thay thế 'Present' hoặc 'hiện tại' và các từ tương đương là {time}
             Lưu ý: thời gian bắt đầu và kết thúc luôn phải là dạng MM/YYYY, kết quả trả ra bắt buộc phải đầy đủ thời gian bắt đầu và thời gian kết thúc, nếu thiếu thông tin thời gian bắt đầu, hãy lấy thời gian bắt đầu là thời điểm hiện tại.
-            Kết quả phải là dạng json, các value luôn là string
+            Nếu tháng viết bằng chữ, cần chuyển về dạng số.
+            Kết quả phải là dạng json
             Ví dụ:
-            "VVCC": "01/2021 - 03/2022"
-            "Sotatek": "01/2023 - 06/2023"
-            "vincom": "06/2023 -  08/2024"
-            "công ty abc": "11/2021 - 12/2022"
-            Dưới đây là thông tin CV:"""
+            ---
+            "VVCC, developer": "01/2021 - 03/2022",
+            "VVCC, sale": "01/2023 - 06/2023",
+            "vincom, dev": "06/2023 -  08/2024"
+            ---
+            "VCC, BA": "11/2002 - 03/2007",
+            "CVB, design": "07/2012 - 05/2019",
+            "công ty abc, vị trí": "11/2021 - 12/2022"
+            Dưới đây là thông tin CV:
+            """
     try:
         system_work = system_work.format(time=formatted_time)
         system = system.format(time=formatted_time)
@@ -112,21 +128,30 @@ def extract_field(text):
         prompt_work = ChatPromptTemplate.from_messages([("system", system_work), ("human", human)])
 
         chain = prompt | chat
-        res_extracted=chain.invoke({"text": text}).content
+        # res_extracted=chain.invoke({"text": text}).content
+        res_extracted=chat.invoke(system+text).content
         # print(res_extracted)
         chain_work = prompt_work | chat
-        res_extracted_work=chain_work.invoke({"text": text}).content
+        # res_extracted_work=chain_work.invoke({"text": text}).content
+        res_extracted_work=chat.invoke(system_work+text).content
         # print(res_extracted_work)
         result = re.search(r'\{.*?\}', res_extracted, re.DOTALL).group()
         json_object = json.loads(result)
-        result_work = re.search(r'\{.*?\}', res_extracted_work, re.DOTALL).group()
-        json_object_work = json.loads(result_work)
-        # print(json_object_work)
-        years, months = calculate_total_working_time(json_object_work)
+        try:
+            result_work = re.search(r'\{.*?\}', res_extracted_work, re.DOTALL).group()
+            json_object_work = json.loads(result_work)
+            # print(json_object_work)
+            years, months = calculate_total_working_time(json_object_work)
+        except:
+            years=0
+            months=0
         text_output =''
         for key, value in json_object.items():
+            if key == 'Chứng chỉ chuyên ngành':
+                if 'HTML' in value or 'PHP' in value or 'CSS' in value or 'MySQL' in value or 'Java' in value or 'EXCEL' in value:
+                    value = 'Không'
             text_output += f"{key}: {value}\n"
-        text_output = text_output+ '\nKinh nghiệm làm việc: '+str(years)+ ' năm '+str(months)+ ' tháng'
+        text_output = text_output+ 'Kinh nghiệm làm việc: '+str(years)+ ' năm '+str(months)+ ' tháng'
     except:
         # print('switch to 32k...')
         chat = ChatGroq(
@@ -140,20 +165,29 @@ def extract_field(text):
         prompt_work = ChatPromptTemplate.from_messages([("system", system_work), ("human", human)])
 
         chain = prompt | chat
-        res_extracted=chain.invoke({"text": text}).content
+        # res_extracted=chain.invoke({"text": text}).content
+        res_extracted=chat.invoke(system+text).content
         # print(res_extracted)
         chain_work = prompt_work | chat
-        res_extracted_work=chain_work.invoke({"text": text}).content
+        # res_extracted_work=chain_work.invoke({"text": text}).content
+        res_extracted_work=chat.invoke(system_work+text).content
         # print(res_extracted_work)
         result = re.search(r'\{.*?\}', res_extracted, re.DOTALL).group()
         json_object = json.loads(result)
-        result_work = re.search(r'\{.*?\}', res_extracted_work, re.DOTALL).group()
-        json_object_work = json.loads(result_work)
-        # print(json_object_work)
-        years, months = calculate_total_working_time(json_object_work)
+        try:
+            result_work = re.search(r'\{.*?\}', res_extracted_work, re.DOTALL).group()
+            json_object_work = json.loads(result_work)
+            print(json_object_work)
+            years, months = calculate_total_working_time(json_object_work)
+        except:
+            years=0
+            months=0
         text_output =''
         for key, value in json_object.items():
+            if key == 'Chứng chỉ chuyên ngành':
+                if 'HTML' in value or 'PHP' in value or 'CSS' in value or 'MySQL' in value or 'Java' in value or 'EXCEL' in value:
+                    value = 'Không'
             text_output += f"{key}: {value}\n"
-        text_output = text_output+ '\nKinh nghiệm làm việc: '+str(years)+ ' năm '+str(months)+ ' tháng'
+        text_output = text_output+ 'Kinh nghiệm làm việc: '+str(years)+ ' năm '+str(months)+ ' tháng'
 
     return text_output
